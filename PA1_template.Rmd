@@ -3,18 +3,69 @@
 
 ## Loading and preprocessing the data
 
+Start by unzipping the compressed file and reading the data into R.
 
+```{r}
+activity <- read.csv(unz(paste(getwd(),"/activity.zip", sep=""), "activity.csv"), header=TRUE, sep=",")
+```
 
 ## What is mean total number of steps taken per day?
 
+```{r meandaily, echo=FALSE}
+hist(activity$steps)
+meen <- mean(activity$steps, na.rm=TRUE)
+meediin <- median(activity$steps, na.rm=TRUE)
+```
 
+The mean steps per day from this data set is `r meen`.
+The median number of steps per day is `r meediin`.
 
 ## What is the average daily activity pattern?
 
+```{r avgdaily, echo=FALSE}
+avg_steps_per_interval <- with(activity, tapply(steps, interval, mean, na.rm=TRUE))
+plot(avg_steps_per_interval, type="l")
+macks <- max(avg_steps_per_interval, na.rm=TRUE)
+macks_int <- which(avg_steps_per_interval==max(avg_steps_per_interval))
+```
 
+This individual averaged `r macks` steps during the `r macks_int`th interval.
 
 ## Imputing missing values
 
+```{r missing,echo=FALSE}
+missing_no <- nrow(activity) - sum(complete.cases(activity))
+```
 
+Unfortunately, there are `r missing_no` observations in the data that are missing the number of steps taken.
+
+We compensate by substituting the average number of steps for a given five-minute interval across all days whenever data for an individual day does not exist.
+
+```{r replace, echo=FALSE}
+activity2 <- activity
+activity2$average <- rep(avg_steps_per_interval * -1)
+activity2$steps2 <- pmax(activity2$steps, activity2$average, na.rm=TRUE)
+activity2$steps <- abs(activity2$steps2)
+hist(activity2$steps)
+meen2 <- mean(activity2$steps, na.rm=TRUE)
+meediin2 <- median(activity2$steps)
+```
+
+The new mean steps per day from this data set is `r meen2`.
+The new median number of steps per day is `r meediin2`.
 
 ## Are there differences in activity patterns between weekdays and weekends?
+
+```{r dayofweek, echo=FALSE}
+activity2$date <- as.Date(activity2$date)
+activity2$dayofweek <- weekdays(activity2$date)
+weekday_data <- subset(activity2, dayofweek!="Sunday" & dayofweek!="Saturday")
+weekend_data <- subset(activity2, dayofweek=="Sunday" | dayofweek=="Saturday")
+```
+
+```{r avgdaily2, echo=FALSE}
+avg_steps_per_interval_D <- with(weekday_data, tapply(steps, interval, mean, na.rm=TRUE))
+plot(avg_steps_per_interval_D, type="l")
+avg_steps_per_interval_E <- with(weekend_data, tapply(steps, interval, mean, na.rm=TRUE))
+plot(avg_steps_per_interval_E, type="l")
+```
